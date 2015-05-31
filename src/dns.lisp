@@ -60,7 +60,7 @@
           (run-event-cb 'event-handler status event-cb))
       (uv:free-req req))))
 
-(defun reverse-dns-lookup (ip resolve-cb &key event-cb)
+(defun reverse-dns-lookup (ip resolve-cb &key port event-cb)
   "Perform reverse DNS lookup on IP specifier as string.  Call RESOLVE-CB with
    resolved HOST and SERVICE as strings.  The callback is called once with one
    host, even if multiple hosts match the query."
@@ -75,10 +75,12 @@
                    t))))
       (if (find #\: ip)
           (with-foreign-object* (addr uv:sockaddr-in6)
-                                ((uv-a:sockaddr-in-sin-family +af-inet6+))
+                                ((uv-a:sockaddr-in6-sin6-family +af-inet6+)
+                                 (uv-a:sockaddr-in6-sin6-port (or port 0)))
             (uv:uv-inet-pton +af-inet6+ ip (cffi:foreign-slot-pointer addr '(:struct uv:sockaddr-in6) 'uv:sin6-addr))
             (lookup addr))
           (with-foreign-object* (addr uv:sockaddr-in)
-                                ((uv-a:sockaddr-in-sin-family +af-inet+))
+                                ((uv-a:sockaddr-in-sin-family +af-inet+)
+                                 (uv-a:sockaddr-in-sin-port (or port 0)))
             (uv:uv-inet-pton +af-inet+ ip (cffi:foreign-slot-pointer addr '(:struct uv:sockaddr-in) 'uv:sin-addr))
             (lookup addr))))))
